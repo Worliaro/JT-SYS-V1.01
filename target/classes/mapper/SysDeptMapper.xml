@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jt.sys.dao.SysDeptDao">
+	<select id="findObjects" resultType="map">
+		select c.*,
+			(select p.name from sys_depts p
+			where c.parentId= p.id) parentName
+		from
+			sys_depts c		
+	</select>
+	
+	<!-- 根据id统计子部门 -->
+	<select id="getChildCount">
+	 	select count(*)
+	 	from sys_depts
+	 	where parentId = #{id}
+	</select>
+	
+	<!-- 根据id删除部门 -->
+	<delete id="deleteObject" parameterType="int">
+		delete from sys_depts
+		where id=#{id}
+	</delete>
+	
+	<!-- 查询部门所有父子节点 -->
+	<select id="findZtreeDeptNodes" resultType="com.jt.common.vo.Node">
+		select id,name,parentId 
+		from sys_depts
+	</select>
+	
+	<!-- 添加部门信息 -->
+	<insert id="insertObject">
+		insert into
+		 sys_depts
+			(name,sort,note,parentId,createdTime,modifiedTime,createdUser,modifiedUser)
+		values
+			(#{name},#{sort},#{note},#{parentId},now(),now(),#{createdUser},#{modifiedUser})
+	</insert>
+	
+	<!-- 修改部门信息 -->
+	<update id="updateObject">
+		update sys_depts
+		set
+			name=#{name},
+			note=#{note},
+			sort=#{sort},
+           parentId=#{parentId},
+           modifiedUser=#{modifiedUser},
+           modifiedTime=now()
+        where id=#{id}
+	</update>
+</mapper>
+
+
+

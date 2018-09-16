@@ -1,0 +1,187 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">日志管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="用户名">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" class="btn btn-default btn-delete" onclick="doDeleteObjects()">删除</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+						    <th><input type="checkbox" id="checkAll" class="cBox" name="cItem"/>全选</th>
+							<th>用户名</th>
+							<th>操作</th>
+							<th>请求方法</th>
+							<th>请求参数</th>
+							<th>IP地址</th>
+							<th>执行时间</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId"></tbody>
+				</table>
+			</div>
+			<div id="pageId" class="box-footer clearfix">
+			</div>
+			<!-- /.box-body -->
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript">
+$(function(){
+	  //回调函数
+	  $("#pageId").load("doPageUI.do",function(){
+		  doGetObjects()
+	  })
+	  //查询
+	  $(".input-group-btn").on("click",".btn-search",doQueryObjects)  
+	  //全选
+	  $("thead").on("change","#checkAll",doChangeTBodyCheckBoxState)
+	  //
+	  $("#tbodyId").on("change",".cBox",doChangeTheadCheckBoxState)
+})
+
+//全选函数
+//当tbody中checkbox的状态发生变化以后,修改thead中全选元素的状态值
+function doChangeTBodyCheckBoxState(){
+	 //1.获取当前点击对象的checked属性的值
+  	var flag=$(this).prop("checked");//true or false
+ 	 $("#tbodyId input[name='cItem']").prop("checked",flag);
+}
+
+//Tbody中checkbox的状态影响thead中全选元素的状态
+function doChangeTheadCheckBoxState(){
+	
+	var flag = true;
+	$("#tbodyId input[type='checkbox']").each(function(){
+		flag=flag&&$(this).prop("checked")
+	})
+	//修改全选元素checkbox的值为flag
+	$("#checkAll").prop("checked",flag)
+}
+//查询按钮事件处理函数
+function doQueryObjects(){
+	//初始化pageCurrent=1
+	$("#pageId").data("pageCurrent",1)
+	//执行查询操作(复用)
+	doGetObjects();
+	
+}
+//分页查询函数
+function doGetObjects(){
+	  //url
+	  var url = "log/doFindPageObjects.do"
+	  //参数param
+	  var pageCurrent=$("#pageId").data("pageCurrent")
+	  if(!pageCurrent) pageCurrent=1
+	  // var pageCurrent=1
+	  var params = {"pageCurrent":pageCurrent}
+	  //基于用户名获取查询参数值username
+	  var username = $("#searchNameId").val().trim();
+	  if(username) params.username = username;
+	  //验证参数
+	  console.log(params);
+	  //发起GET请求
+	  $.getJSON(url,params,function(result){
+		  console.log(result)
+		  doHandleResponseResult(result)
+	  })  
+}
+//设置异步结果
+function doHandleResponseResult(result){
+	  if(result.state==1){
+		  //更新table中tbody内部的数据
+		  doSetTableBodyRows(result.data.records)   
+		  //执行page分页操作
+		  doSetPagination(result.data)
+	  }else{
+		  alert(result.msg)
+	  }
+}
+//设置表格内容
+function doSetTableBodyRows(records){
+	  //1.获取tbody对象并清空
+	  var tbody = $("#tbodyId")
+	  tbody.empty()
+	  //2.迭代records记录,追加到tbody上
+	  for(var i in records){
+		  var tr = $("<tr></tr>")
+		  var tds = doCreateTds(records[i])
+		  tr.append(tds)
+		  tbody.append(tr)
+	  }
+}
+//在td中加入相应信息
+function doCreateTds(row){
+	  var tds ="<td><input type='checkbox' class='cBox' name='cItem' value='"+row.id+"'></td>"+
+		  "<td>"+row.username+"</td>"+
+      	 "<td>"+row.operation+"</td>"+
+      	 "<td>"+row.method+"</td>"+
+     	 "<td>"+row.params+"</td>"+
+      	 "<td>"+row.ip+"</td>"+
+     	 "<td>"+row.time+"</td>"
+    
+     	 return tds
+}
+//执行删除操作
+function doDeleteObjects(){
+	//1.获取选中的id值(执行doGetCkeckedIds函数)
+	var ids = doGetCheckedIds()
+	if(ids.length==0){
+		alert("请至少选择一个删除数据")
+		return
+	}
+	//2.发出请求
+	//获取url和参数
+	var url = "log/doDeleteObjects.do"
+	var params = {"ids":ids.toString()} //[1,2,3,4] ->1,2,3,4
+	//测试参数
+	console.log(params)
+	$.post(url,params,function(result){
+		if(result.state==1){
+			alert(result.message)
+			doGetObjects()
+		}else{
+			alert(result.message)
+		}
+	})
+}
+
+function doGetCheckedIds(){
+	 //定义一个数组,用于存储选中的checkbox的id值
+     var array=[];//new Array();
+    //获取tbody中所有名字为cItem的input元素
+    //迭代这些元素，每发现一个元素都会执行如下回调函数
+    $("#tbodyId input[name=cItem]").each(function(){
+        //假如此元素的checked属性的值为true
+        if($(this).prop("checked")){
+            //调用数组对象的push方法将选中对象的值存储到数组
+            array.push($(this).val());
+        }
+    });
+
+    return array;
+}
+
+
+
+</script>
+
+
+
+

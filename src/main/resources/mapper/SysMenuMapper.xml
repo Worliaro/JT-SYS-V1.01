@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jt.sys.dao.SysMenuDao">
+	
+	<!-- 查询系统菜单 -->
+	<select id="findObjects" resultType="map">
+		SELECT
+			c.*, p. NAME parentName
+		FROM
+			sys_menus c
+		LEFT JOIN sys_menus p ON c.parentId = p.id
+		<!-- 方案二
+		 SELECT
+			c.*, (
+				SELECT
+					p. NAME
+				FROM
+					sys_menus p
+				WHERE
+					c.parentId = p.id
+			) parentName
+		FROM
+			sys_menus c
+			 -->
+	</select>
+	
+	<!-- 根据id统计子菜单个数 -->
+	<select id="getChildCount" resultType="int">
+		select count(*) 
+		from sys_menus
+		where parentId = #{id}
+	</select>
+	
+	<!-- 根据id删除菜单 -->
+	<delete id="deleteObject">
+		delete from sys_menus
+		where id = #{id}
+	</delete>
+	<!-- 查询菜单节点信息(最后将信息呈现到zTree上)-->
+	 <select id="findZtreeMenuNodes" resultType="com.jt.common.vo.Node">
+        select id,name,parentId
+        from sys_menus        
+    </select>
+	
+	<!-- 向sys_menus中添加数据 -->
+	<insert id="insertObject" parameterType="com.jt.sys.entity.SysMenu">
+		 insert into sys_menus
+          (name,url,type,sort,note,parentId,permission,
+			createdTime,modifiedTime,createdUser,modifiedUser)
+          values
+          (#{name},#{url},#{type},#{sort},#{note},#{parentId},#{permission},
+			now(),now(),#{createdUser},#{modifiedUser})
+	</insert>
+</mapper>
+
+
+
